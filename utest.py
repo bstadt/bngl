@@ -216,30 +216,35 @@ def operation_tests():
 
 
     #register_weight_gradient registers gradient
+    def test_weight_grad_fn(dloss_dout, last_input):
+        last_input = np.squeeze(last_input)
+        dout_dweight = np.stack([[last_input[0], last_input[1], 0, 0],
+                                 [0, 0, last_input[0], last_input[1]]])
+        return dloss_dout @ dout_dweight
+
     passed = False
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: y[0] @ x,
-                                 input_gradient_fn=lambda x, y: y[0],
-                                 weight_gradient_fn=lambda x, y: x @ np.squeeze(np.stack([y.T, y.T])),
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,
+                                 input_gradient_fn=lambda x, y: np.array(y).reshape(2, 2),
+                                 weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
-                                 trainable_parameters=[np.identity(2)],
+                                 trainable_parameters=[1., 0., 1., 0.],
                                  trainable=True)
 
         #required to populate last_input
         my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
         my_operation.register_weight_gradient(np.array([1, 1]).reshape(1, 2))
-        expected_out = np.array([2, 4])
+        expected_out = np.array([1, 2, 1, 2])
         delta_mat = np.abs(my_operation.weight_gradients[0] - expected_out)
         if np.allclose(np.sum(delta_mat), 0.):
             passed = True
 
     except:
-        pass
+        raise
     if not passed:
         failed_tests.append('register_gradient does not register gradient')
-
 
     #register_weight_gradient accumulates gradients
     passed = False
@@ -248,7 +253,7 @@ def operation_tests():
                                  (2, 1),
                                  operation_fn=lambda x, y: y[0] @ x,
                                  input_gradient_fn=lambda x, y: y[0],
-                                 weight_gradient_fn=lambda x, y: x @ np.squeeze(np.stack([y.T, y.T])),
+                                 weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
                                  trainable_parameters=[np.identity(2)],
                                  trainable=True)
@@ -275,7 +280,7 @@ def operation_tests():
                                  (2, 1),
                                  operation_fn=lambda x, y: y[0] @ x,
                                  input_gradient_fn=lambda x, y: y[0],
-                                 weight_gradient_fn=lambda x, y: x @ np.squeeze(np.stack([y.T, y.T])),
+                                 weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
                                  trainable_parameters=[np.identity(2)],
                                  trainable=True)
