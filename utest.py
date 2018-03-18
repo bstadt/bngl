@@ -236,16 +236,92 @@ def operation_tests():
             passed = True
 
     except:
-        raise
+        pass
     if not passed:
         failed_tests.append('register_gradient does not register gradient')
 
 
-    #TODO multiple gradients registered sum
-    #TODO passing bad input to register gradient
-    #TODO update actually updates
-    return failed_tests
+    #register_weight_gradient accumulates gradients
+    passed = False
+    try:
+        my_operation = Operation((2, 1),
+                                 (2, 1),
+                                 operation_fn=lambda x, y: y[0] @ x,
+                                 input_gradient_fn=lambda x, y: y[0],
+                                 weight_gradient_fn=lambda x, y: x @ np.squeeze(np.stack([y.T, y.T])),
+                                 update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
+                                 trainable_parameters=[np.identity(2)],
+                                 trainable=True)
 
+        #required to populate last_input
+        my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
+        my_operation.register_weight_gradient(np.array([1, 1]).reshape(1, 2))
+        my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
+        my_operation.register_weight_gradient(np.array([1, 1]).reshape(1, 2))
+
+        if len(my_operation.weight_gradients) == 2:
+            passed = True
+
+    except:
+        pass
+    if not passed:
+        failed_tests.append('register_gradient does not register gradient')
+
+
+    #register_weight_gradient handles bad input data type
+    passed = False
+    try:
+        my_operation = Operation((2, 1),
+                                 (2, 1),
+                                 operation_fn=lambda x, y: y[0] @ x,
+                                 input_gradient_fn=lambda x, y: y[0],
+                                 weight_gradient_fn=lambda x, y: x @ np.squeeze(np.stack([y.T, y.T])),
+                                 update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
+                                 trainable_parameters=[np.identity(2)],
+                                 trainable=True)
+
+        #required to populate last_input
+        my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
+        my_operation.register_weight_gradient('cat')
+
+    except TypeError:
+        passed = True
+    except:
+        pass
+
+    if not passed:
+        failed_tests.append('register_gradient does not handle bad input dtype')
+
+
+
+    #register_weight_gradient throws error if do_operation is not done first
+    passed = False
+    try:
+        my_operation = Operation((2, 1),
+                                 (2, 1),
+                                 operation_fn=lambda x, y: y[0] @ x,
+                                 input_gradient_fn=lambda x, y: y[0],
+                                 weight_gradient_fn=lambda x, y: x @ np.squeeze(np.stack([y.T, y.T])),
+                                 update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
+                                 trainable_parameters=[np.identity(2)],
+                                 trainable=True)
+
+        #required to populate last_input
+        my_operation.register_weight_gradient(np.array([1, 2]).reshape(-1, 1))
+
+    except ValueError:
+        passed = True
+    except:
+        pass
+
+    if not passed:
+        failed_tests.append('register_gradient does not fail when last_input is None')
+
+
+    #TODO update updates and autoclears gradients
+    #TODO update autoclear_gradients=False does not clear gradients
+
+    return failed_tests
 
 if __name__ == '__main__':
     operation_failed_tests = operation_tests()
@@ -254,4 +330,6 @@ if __name__ == '__main__':
         for elem in operation_failed_tests:
             print('\t', elem)
         print('\n')
+
+
     print('Testing Complete!')

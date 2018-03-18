@@ -90,7 +90,12 @@ class Operation:
 
 
     def register_weight_gradient(self, gradient):
-        #TODO input checking
+        if type(gradient) != np.ndarray:
+            raise TypeError('register_weight_gradient expected numpy.ndarray, got: ', type(gradient))
+
+        if self.last_input is None:
+            raise ValueError('register_weight_gradient requires an input through the operation first! Did you forget to do_operation?')
+
         weight_gradient = self.weight_gradient_fn(gradient, self.last_input)
         self.weight_gradients.append(weight_gradient)
         return
