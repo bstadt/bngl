@@ -7,10 +7,10 @@ class Operation:
                  output_shape,
                  operation_fn=None,
                  input_gradient_fn=None,
-                 update_fn=None,
                  weight_gradient_fn=None,
-                 trainable_parameters=None,
-                 trainable=True):
+                 update_fn=None,
+                 trainable=True,
+                 trainable_parameters=None):
 
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -51,6 +51,10 @@ class Operation:
                 raise ValueError('gradient_fn must return shape: ', desired_shape, ' but returned: ', test_output.shape)
             self.input_gradient_fn = input_gradient_fn
 
+
+        #setting self.weight_gradient_fn
+        self.weight_gradient_fn = weight_gradient_fn
+
         #setting self.update_fn
         if update_fn is None:
             if self.trainable:
@@ -60,7 +64,7 @@ class Operation:
                 warnings.warn('update_fn passed to non-trainable layer', Warning)
         self.update_fn = update_fn
 
-        self.gradients = []
+        self.weight_gradients = []
         self.last_input = None
 
 
@@ -85,8 +89,10 @@ class Operation:
         return self.input_gradient_fn(self.last_input, self.trainable_parameters)
 
 
-    def register_output_gradient(self, gradient):
-        self.gradients.append(gradient)
+    def register_weight_gradient(self, gradient):
+        #TODO input checking
+        weight_gradient = self.weight_gradient_fn(gradient, self.last_input)
+        self.weight_gradients.append(weight_gradient)
         return
 
 

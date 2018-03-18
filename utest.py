@@ -215,26 +215,35 @@ def operation_tests():
         failed_tests.append('get_gradient does not get gradient')
 
 
-    #register_gradient registers gradient
+    #register_weight_gradient registers gradient
     passed = False
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: x,
-                                 input_gradient_fn=lambda x, y: np.identity(2) * x,
-                                 trainable=False)
-        my_operation.register_output_gradient(np.arange(2).reshape(-1, 1))
-        gradlen_1 = len(my_operation.gradients)
-        my_operation.register_output_gradient(np.arange(2).reshape(-1, 1))
-        gradlen_2 = len(my_operation.gradients)
-        if gradlen_1 == 1 and gradlen_2 == 2:
-            passed=True
+                                 operation_fn=lambda x, y: y[0] @ x,
+                                 input_gradient_fn=lambda x, y: y[0],
+                                 weight_gradient_fn=lambda x, y: x @ np.squeeze(np.stack([y.T, y.T])),
+                                 update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
+                                 trainable_parameters=[np.identity(2)],
+                                 trainable=True)
+
+        #required to populate last_input
+        my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
+        my_operation.register_weight_gradient(np.array([1, 1]).reshape(1, 2))
+        expected_out = np.array([2, 4])
+        delta_mat = np.abs(my_operation.weight_gradients[0] - expected_out)
+        if np.allclose(np.sum(delta_mat), 0.):
+            passed = True
+
     except:
-        pass
+        raise
     if not passed:
         failed_tests.append('register_gradient does not register gradient')
 
 
+    #TODO multiple gradients registered sum
+    #TODO passing bad input to register gradient
+    #TODO update actually updates
     return failed_tests
 
 
