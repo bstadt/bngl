@@ -2,8 +2,8 @@ import warnings
 import numpy as np
 from bngl.activation import Relu
 from bngl.operation import Operation
-from bngl.layer import FullyConnected1D
 from bngl.loss import SoftmaxCrossEntropy
+from bngl.layer import FullyConnected1D, Bias1D
 
 def operation_tests():
     failed_tests = []
@@ -252,7 +252,7 @@ def operation_tests():
             passed = True
 
     except:
-        raise
+        pass
     if not passed:
         failed_tests.append('register_gradient does not register gradient')
 
@@ -353,8 +353,7 @@ def operation_tests():
             passed = True
 
     except:
-        raise
-
+        pass
     if not passed:
         failed_tests.append('update gradient does not correctly update weights')
 
@@ -377,7 +376,7 @@ def operation_tests():
             passed=True
 
     except:
-        raise
+        pass
 
     if not passed:
         failed_tests.append('update gradient does not clear gradients by default')
@@ -424,7 +423,7 @@ def layer_tests():
     except:
         pass
     if not passed:
-        failed_tests.append('initializer does not throw error when input_shape is not rank 2')
+        failed_tests.append('FullyConnected1D initializer does not throw error when input_shape is not rank 2')
 
     #initializer throws error when output_shape is not rank 2
     passed = False
@@ -438,7 +437,7 @@ def layer_tests():
     except:
         pass
     if not passed:
-        failed_tests.append('initializer does not throw error when output_shape is not rank 2')
+        failed_tests.append('FullyConnected1D initializer does not throw error when output_shape is not rank 2')
 
 
     #initializer throws error when input_shape is not (-1, 1)
@@ -453,7 +452,7 @@ def layer_tests():
     except:
         pass
     if not passed:
-        failed_tests.append('initializer does not throw error when input_shape is not (-1, 1)')
+        failed_tests.append('FullyConnected1D initializer does not throw error when input_shape is not (-1, 1)')
 
 
     #initializer throws error when output_shape is not (-1, 1)
@@ -468,7 +467,7 @@ def layer_tests():
     except:
         pass
     if not passed:
-        failed_tests.append('initializer does not throw error when output_shape is not (-1, 1)')
+        failed_tests.append('FullyConnected1D initializer does not throw error when output_shape is not (-1, 1)')
 
     #initializer_fn initializes weights
     passed = False
@@ -484,7 +483,7 @@ def layer_tests():
     except:
         pass
     if not passed:
-        failed_tests.append('initializer_fn does not correctly initialize weights')
+        failed_tests.append('FullyConnected1D initializer_fn does not correctly initialize weights')
 
 
     #initializer throws error when initializer_fn does not return np.array
@@ -500,7 +499,7 @@ def layer_tests():
     except:
         pass
     if not passed:
-        failed_tests.append('initializer does not throw error when initializer_fn returns non-list')
+        failed_tests.append('FullyConnected1D initializer does not throw error when initializer_fn returns non-list')
 
     #initializer throws error when initializer_fn does not return correct shape
     passed = False
@@ -515,7 +514,7 @@ def layer_tests():
     except:
         pass
     if not passed:
-        failed_tests.append('no error thrown when initializer_fn returns incorrect number of trainable params')
+        failed_tests.append('FullyConnected1D doesnt throw error when initializer_fn returns incorrect number of trainable params')
 
 
     #FullyConnected1D completes 1 iteration of gradient descent
@@ -533,10 +532,111 @@ def layer_tests():
         if np.allclose(delta, 0.):
             passed = True
     except:
-        raise
+        pass
     if not passed:
         failed_tests.append('FullyConnected1D does not complete 1 iteration of gradient descent')
 
+    #Bias1D throws error if input_shape rank is not 2
+    passed = False
+    try:
+        my_b = Bias1D((2,),
+                      lambda x, y: y-.5*np.sum(x, axis=0))
+
+    except ValueError:
+        passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('Bias1D does not throw error when input is not rank 2')
+
+    #Bias1D throws error if input_shape is not (-1, 1)
+    passed = False
+    try:
+        my_b = Bias1D((1,2),
+                      lambda x, y: y-.5*np.sum(x, axis=0))
+
+    except ValueError:
+        passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('Bias1D does not throw error when input is not (-1, 1)')
+
+    #Bias1D throws error if initializer_fn doesnt return np.ndarray
+    passed = False
+    try:
+        my_b = Bias1D((2,1),
+                      lambda x, y: y-.5*np.sum(x, axis=0),
+                      initializer_fn=lambda:'cat')
+
+    except TypeError:
+        passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('Bias1D does not throw error when initializer fn returns non np.ndarray')
+    #Bias1D throws error if initializer_fn doesnt return correct number of params
+    passed = False
+    try:
+        my_b = Bias1D((2,1),
+                      lambda x, y: y-.5*np.sum(x, axis=0),
+                      initializer_fn=lambda: np.array([1]).reshape(1,))
+
+    except ValueError:
+        passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('Bias1D does not throw error when initializer fn returns incorrect number of params')
+
+    #Bias1D computs correctly
+    passed = False
+    try:
+        my_b = Bias1D((2,1),
+                      lambda x, y: y-.5*np.sum(x, axis=0),
+                      initializer_fn=lambda: np.array([1., 1.]).reshape(2,))
+        out = my_b.do_operation(np.array([1., 1.]).reshape(-1, 1))
+        delta = out - np.array([2, 2]).reshape(-1, 1)
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('Bias1D does not compute correctly')
+
+
+    #Bias1D computes input gradient correctly
+    passed = False
+    try:
+        my_b = Bias1D((2,1),
+                      lambda x, y: y-.5*np.sum(x, axis=0),
+                      initializer_fn=lambda: np.array([1., 1.]).reshape(2,))
+        my_b.do_operation(np.array([1., 1.]).reshape(-1, 1))
+        out = my_b.get_input_gradient()
+        delta = out - np.identity(2)
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('Bias1D does not compute input gradient correctly')
+
+    #Bias1D can perform 1 full iteration of gradient descent
+    passed = False
+    try:
+        my_b = Bias1D((2,1),
+                      lambda x, y: y-.5*np.diagonal(np.sum(x, axis=0)),
+                      initializer_fn=lambda: np.array([1., 1.]).reshape(2,))
+        my_b.do_operation(np.array([1., 1.]).reshape(-1, 1))
+        my_b.register_weight_gradient(np.array([1., 1.]).reshape((1, 2)))
+        my_b.update()
+        delta = my_b.trainable_parameters - [.5, .5]
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('Bias1D does not complete 1 iteration of gradient descent correctly')
 
     return failed_tests
 
@@ -568,7 +668,7 @@ def activation_tests():
         if np.allclose(delta, 0.):
             passed = True
     except:
-        raise
+        pass
     if not passed:
         failed_tests.append('Relu does not compute input gradient correctly')
 
@@ -594,7 +694,7 @@ def loss_tests():
 
 
 
-    #Softmax Cross Entropy Computes Derivative Correctly
+    #Softmax Cross Entropy Computes Gradient Correctly
     passed = False
     try:
         my_smce = SoftmaxCrossEntropy((2, 1))
@@ -607,7 +707,7 @@ def loss_tests():
     except:
         pass
     if not passed:
-        failed_tests.append('SoftmaxCrossEntropy does not compute derivative correctly')
+        failed_tests.append('SoftmaxCrossEntropy does not compute gradient correctly')
 
     return failed_tests
 
