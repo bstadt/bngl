@@ -46,9 +46,9 @@ class Operation:
             desired_shape = (np.prod(input_shape),
                              np.prod(output_shape))
             if type(test_output) != np.ndarray:
-                raise TypeError('gradient_fn must return numpy.ndarray, but returned: ', type(test_output))
+                raise TypeError('input_gradient_fn must return numpy.ndarray, but returned: ', type(test_output))
             if test_output.shape != desired_shape:
-                raise ValueError('gradient_fn must return shape: ', desired_shape, ' but returned: ', test_output.shape)
+                raise ValueError('input_gradient_fn must return shape: ', desired_shape, ' but returned: ', test_output.shape)
             self.input_gradient_fn = input_gradient_fn
 
 
@@ -68,8 +68,8 @@ class Operation:
         self.last_input = None
 
 
-    def clear_gradients(self):
-        self.gradients = []
+    def clear_weight_gradients(self):
+        self.weight_gradients = []
         self.last_input = None
         return
 
@@ -102,7 +102,7 @@ class Operation:
 
 
     def update(self, autoclear_gradients=True):
-        self.trainable_parameters = self.update_fn(self.gradients,
+        self.trainable_parameters = self.update_fn(self.weight_gradients,
                                                    self.trainable_parameters)
         if autoclear_gradients:
-            self.clear_gradients()
+            self.clear_weight_gradients()

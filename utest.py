@@ -222,6 +222,12 @@ def operation_tests():
                                  [0, 0, last_input[0], last_input[1]]])
         return dloss_dout @ dout_dweight
 
+    def test_update_fn(gradients, trainable_parameters):
+        trainable_parameters = np.array(trainable_parameters).reshape((2, 2))
+        gradient = np.sum(gradients, axis=0).reshape((2, 2))
+        updated_params = trainable_parameters - .5 * gradient
+        return updated_params.flatten()
+
     passed = False
     try:
         my_operation = Operation((2, 1),
@@ -229,7 +235,7 @@ def operation_tests():
                                  operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,
                                  input_gradient_fn=lambda x, y: np.array(y).reshape(2, 2),
                                  weight_gradient_fn=test_weight_grad_fn,
-                                 update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
+                                 update_fn=test_update_fn,
                                  trainable_parameters=[1., 0., 1., 0.],
                                  trainable=True)
 
@@ -254,7 +260,7 @@ def operation_tests():
                                  operation_fn=lambda x, y: y[0] @ x,
                                  input_gradient_fn=lambda x, y: y[0],
                                  weight_gradient_fn=test_weight_grad_fn,
-                                 update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
+                                 update_fn=test_update_fn,
                                  trainable_parameters=[np.identity(2)],
                                  trainable=True)
 
@@ -281,7 +287,7 @@ def operation_tests():
                                  operation_fn=lambda x, y: y[0] @ x,
                                  input_gradient_fn=lambda x, y: y[0],
                                  weight_gradient_fn=test_weight_grad_fn,
-                                 update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
+                                 update_fn=test_update_fn,
                                  trainable_parameters=[np.identity(2)],
                                  trainable=True)
 
@@ -306,8 +312,8 @@ def operation_tests():
                                  (2, 1),
                                  operation_fn=lambda x, y: y[0] @ x,
                                  input_gradient_fn=lambda x, y: y[0],
-                                 weight_gradient_fn=lambda x, y: x @ np.squeeze(np.stack([y.T, y.T])),
-                                 update_fn=lambda x, y: y[0] - .5 * np.sum(x, axis=0),
+                                 weight_gradient_fn=test_weight_grad_fn,
+                                 update_fn=test_update_fn,
                                  trainable_parameters=[np.identity(2)],
                                  trainable=True)
 
@@ -323,8 +329,78 @@ def operation_tests():
         failed_tests.append('register_gradient does not fail when last_input is None')
 
 
-    #TODO update updates and autoclears gradients
-    #TODO update autoclear_gradients=False does not clear gradients
+    #update updates
+    passed = False
+    try:
+        my_operation = Operation((2, 1),
+                                 (2, 1),
+                                 operation_fn=lambda x, y: y[0] @ x,
+                                 input_gradient_fn=lambda x, y: y[0],
+                                 weight_gradient_fn=test_weight_grad_fn,
+                                 update_fn=test_update_fn,
+                                 trainable_parameters=[np.identity(2)],
+                                 trainable=True)
+
+        my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
+        my_operation.register_weight_gradient(np.array([1, 1]).reshape(1, 2))
+        my_operation.update()
+        delta = np.sum(abs(my_operation.trainable_parameters - [.5, -1, -.5, 0]))
+        if np.allclose(delta, 0.):
+            passed = True
+
+    except:
+        raise
+
+    if not passed:
+        failed_tests.append('update gradient does not correctly update weights')
+
+    #update autoclears gradients by default
+    passed = False
+    try:
+        my_operation = Operation((2, 1),
+                                 (2, 1),
+                                 operation_fn=lambda x, y: y[0] @ x,
+                                 input_gradient_fn=lambda x, y: y[0],
+                                 weight_gradient_fn=test_weight_grad_fn,
+                                 update_fn=test_update_fn,
+                                 trainable_parameters=[np.identity(2)],
+                                 trainable=True)
+
+        my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
+        my_operation.register_weight_gradient(np.array([1, 1]).reshape(1, 2))
+        my_operation.update()
+        if len(my_operation.weight_gradients)==0:
+            passed=True
+
+    except:
+        raise
+
+    if not passed:
+        failed_tests.append('update gradient does not clear gradients by default')
+
+    #update autoclear_gradients=False does not clear gradients
+    passed = False
+    try:
+        my_operation = Operation((2, 1),
+                                 (2, 1),
+                                 operation_fn=lambda x, y: y[0] @ x,
+                                 input_gradient_fn=lambda x, y: y[0],
+                                 weight_gradient_fn=test_weight_grad_fn,
+                                 update_fn=test_update_fn,
+                                 trainable_parameters=[np.identity(2)],
+                                 trainable=True)
+
+        my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
+        my_operation.register_weight_gradient(np.array([1, 1]).reshape(1, 2))
+        my_operation.update(autoclear_gradients=False)
+        if len(my_operation.weight_gradients)==1:
+            passed=True
+
+    except:
+        raise
+
+    if not passed:
+        failed_tests.append('update gradient clears gradients even when autoclear_gradients=False')
 
     return failed_tests
 
