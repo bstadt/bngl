@@ -1,5 +1,6 @@
 import warnings
 import numpy as np
+from bngl.activation import Relu
 from bngl.operation import Operation
 from bngl.layer import FullyConnected1D
 
@@ -540,6 +541,39 @@ def layer_tests():
     return failed_tests
 
 
+def activation_tests():
+    failed_tests = []
+
+    #Relu does Relu
+    passed = False
+    try:
+        my_relu = Relu((2, 1))
+        out = my_relu.do_operation(np.array([2, -1]).reshape(-1, 1))
+        delta = out - np.array([2, 0]).reshape(-1, 1)
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('Relu does not compute Relu')
+
+    #Relu coputes input_gradient_fn correctly
+    passed = False
+    try:
+        my_relu = Relu((2, 1))
+        my_relu.do_operation(np.array([2, -1]).reshape(-1, 1))
+        input_grad = my_relu.get_input_gradient()
+        expected = np.array([[1., 0.],[0., 0.]])
+        delta = input_grad - expected
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        raise
+    if not passed:
+        failed_tests.append('Relu does not compute input gradient correctly')
+
+    return failed_tests
+
 if __name__ == '__main__':
     operation_failed_tests = operation_tests()
     if len(operation_failed_tests) > 0:
@@ -552,6 +586,14 @@ if __name__ == '__main__':
     if len(layer_failed_tests) > 0:
         print('Layer Failures:')
         for elem in layer_failed_tests:
+            print('\t', elem)
+        print('\n')
+
+
+    activation_failed_tests = activation_tests()
+    if len(activation_failed_tests) > 0:
+        print('Activation Failures:')
+        for elem in activation_failed_tests:
             print('\t', elem)
         print('\n')
 
