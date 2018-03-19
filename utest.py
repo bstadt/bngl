@@ -3,10 +3,10 @@ import numpy as np
 from bngl.activation import Relu
 from bngl.operation import Operation
 from bngl.layer import FullyConnected1D
+from bngl.loss import SoftmaxCrossEntropy
 
 def operation_tests():
     failed_tests = []
-
 
     #initializer warns when trainable_parameters is None and layer is trainable
     with warnings.catch_warnings(record=True) as w:
@@ -574,6 +574,44 @@ def activation_tests():
 
     return failed_tests
 
+
+def loss_tests():
+    failed_tests = []
+
+    #Softmax Cross Entropy Computes Correctly
+    passed = False
+    try:
+        my_smce = SoftmaxCrossEntropy((2, 1))
+        out = my_smce.do_operation(np.array([2, 1]).reshape(-1, 1))
+        expected_out = -1 * (2*np.log(1/(1+1/np.e)) + np.log((1/np.e)/(1+1/np.e)))
+        delta = out - expected_out
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('SoftmaxCrossEntropy does not compute correctly')
+
+
+
+    #Softmax Cross Entropy Computes Derivative Correctly
+    passed = False
+    try:
+        my_smce = SoftmaxCrossEntropy((2, 1))
+        my_smce.do_operation(np.array([2, 1]).reshape(-1, 1))
+        out = my_smce.get_input_gradient()
+        expected_out = np.array([1/(1+1/np.e) - 2, (1/np.e)/(1+1/np.e) - 1]).reshape(1, -1)
+        delta = out - expected_out
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('SoftmaxCrossEntropy does not compute derivative correctly')
+
+    return failed_tests
+
+
 if __name__ == '__main__':
     operation_failed_tests = operation_tests()
     if len(operation_failed_tests) > 0:
@@ -589,7 +627,6 @@ if __name__ == '__main__':
             print('\t', elem)
         print('\n')
 
-
     activation_failed_tests = activation_tests()
     if len(activation_failed_tests) > 0:
         print('Activation Failures:')
@@ -597,5 +634,11 @@ if __name__ == '__main__':
             print('\t', elem)
         print('\n')
 
+    loss_failed_tests = loss_tests()
+    if len(loss_failed_tests) > 0:
+        print('Loss Failures:')
+        for elem in loss_failed_tests:
+            print('\t', elem)
+        print('\n')
 
     print('Testing Complete!')
