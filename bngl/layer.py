@@ -11,7 +11,7 @@ class FullyConnected1D(Operation):
         if len(input_shape) != 2 or input_shape[-1] != 1:
             raise ValueError('input_shape expected to be : (-1, 1) but got: ', input_shape)
         if len(output_shape) != 2 or output_shape[-1] != 1:
-            raise ValueError('output_shape expected to be : (-1, 1) but got: ', input_shape)
+            raise ValueError('output_shape expected to be : (-1, 1) but got: ', output_shape)
 
 
         total_weights = input_shape[0] * output_shape[0]
@@ -33,8 +33,8 @@ class FullyConnected1D(Operation):
             return params.reshape(weight_shape)
 
         def weight_gradient_fn(dloss_dout, last_input):
-            dout_dweight = np.stack([last_input for _ in range(output_shape)])
-            dloss_dweight = np.flatten(dloss_dout.T * dout_dweight)
+            dout_dweight = np.stack([last_input for _ in range(output_shape[0])])
+            dloss_dweight = np.array(dloss_dout.T * dout_dweight).flatten()
             return dloss_dweight
 
         super(FullyConnected1D, self).__init__(input_shape,
@@ -42,6 +42,6 @@ class FullyConnected1D(Operation):
                                                operation_fn=operation_fn,
                                                input_gradient_fn=input_gradient_fn,
                                                weight_gradient_fn=weight_gradient_fn,
-                                                update_fn=update_fn,
+                                               update_fn=update_fn,
                                                trainable=True,
                                                trainable_parameters=trainable_parameters)

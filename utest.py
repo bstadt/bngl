@@ -122,7 +122,7 @@ def operation_tests():
         failed_tests.append('Initializer does not fail when update_fn is none and layer is trainable')
 
 
-    #initializer warns when update_fn is not none and layer is trainable
+    #initializer warns when update_fn is not none and layer is not trainable
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
         try:
@@ -215,8 +215,7 @@ def operation_tests():
     if not passed:
         failed_tests.append('get_gradient does not get gradient')
 
-
-    #register_weight_gradient registers gradient
+    #for use in tests below
     def test_weight_grad_fn(dloss_dout, last_input):
         dloss_dout = np.array(dloss_dout)
         last_input = np.squeeze(last_input)
@@ -230,6 +229,8 @@ def operation_tests():
         updated_params = trainable_parameters - .5 * gradient
         return updated_params.flatten()
 
+
+    #register_weight_gradient registers gradient
     passed = False
     try:
         my_operation = Operation((2, 1),
@@ -238,7 +239,7 @@ def operation_tests():
                                  input_gradient_fn=lambda x, y: np.array(y).reshape(2, 2),
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
-                                 trainable_parameters=[1., 0., 1., 0.],
+                                 trainable_parameters=np.array([1., 0., 0., 1.]),
                                  trainable=True)
 
         #required to populate last_input
@@ -259,10 +260,11 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,
+                                 input_gradient_fn=lambda x, y: np.array(y).reshape(2, 2),
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
-                                 trainable_parameters=[np.identity(2)],
+                                 trainable_parameters=np.array([1., 0., 0., 1.]),
                                  trainable=True)
 
         #required to populate last_input
@@ -285,10 +287,11 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,
+                                 input_gradient_fn=lambda x, y: np.array(y).reshape(2, 2),
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
-                                 trainable_parameters=[np.identity(2)],
+                                 trainable_parameters=np.array([1., 0., 0., 1.]),
                                  trainable=True)
 
         #required to populate last_input
@@ -310,10 +313,11 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,
+                                 input_gradient_fn=lambda x, y: np.array(y).reshape(2, 2),
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
-                                 trainable_parameters=[np.identity(2)],
+                                 trainable_parameters=np.array([1., 0., 0., 1.]),
                                  trainable=True)
 
         #required to populate last_input
@@ -333,10 +337,11 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,
+                                 input_gradient_fn=lambda x, y: np.array(y).reshape(2, 2),
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
-                                 trainable_parameters=[np.identity(2)],
+                                 trainable_parameters=np.array([1., 0., 0., 1.]),
                                  trainable=True)
 
         my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
@@ -357,10 +362,11 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,
+                                 input_gradient_fn=lambda x, y: np.array(y).reshape(2, 2),
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
-                                 trainable_parameters=[np.identity(2)],
+                                 trainable_parameters=np.array([1., 0., 0., 1.]),
                                  trainable=True)
 
         my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
@@ -380,10 +386,11 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,
+                                 input_gradient_fn=lambda x, y: np.array(y).reshape(2, 2),
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
-                                 trainable_parameters=[np.identity(2)],
+                                 trainable_parameters=np.array([1., 0., 0., 1.]),
                                  trainable=True)
 
         my_operation.do_operation(np.array([1, 2]).reshape(-1, 1))
@@ -508,6 +515,26 @@ def layer_tests():
         pass
     if not passed:
         failed_tests.append('no error thrown when initializer_fn returns incorrect number of trainable params')
+
+
+    #FullyConnected1D completes 1 iteration of gradient descent
+    passed = False
+    try:
+        my_fc = FullyConnected1D((2, 1),
+                                 (2, 1),
+                                 lambda x, y: y-.5*np.sum(x, axis=0),
+                                 lambda : np.array([1., 0., 0., 1.]))
+
+        my_fc.do_operation(np.array([1, 2]).reshape(-1, 1))
+        my_fc.register_weight_gradient(np.array([1, 1]).reshape(1, 2))
+        my_fc.update()
+        delta = np.sum(abs(my_fc.trainable_parameters - [.5, -1, -.5, 0]))
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        raise
+    if not passed:
+        failed_tests.append('FullyConnected1D does not complete 1 iteration of gradient descent')
 
 
     return failed_tests
