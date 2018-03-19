@@ -1,20 +1,29 @@
 import numpy as np
-from operation import Operation
+from .operation import Operation
 
-class FullyConnected(Operation):
+class FullyConnected1D(Operation):
     def __init__(self,
                  input_shape,
                  output_shape,
                  update_fn,
                  initializer_fn=None):
 
-        weight_shape = (output_shape, input_shape)
+        if len(input_shape) != 2 or input_shape[-1] != 1:
+            raise ValueError('input_shape expected to be : (-1, 1) but got: ', input_shape)
+        if len(output_shape) != 2 or output_shape[-1] != 1:
+            raise ValueError('output_shape expected to be : (-1, 1) but got: ', input_shape)
+
+
+        total_weights = input_shape[0] * output_shape[0]
+        weight_shape = (output_shape[0], input_shape[0])
         if initializer_fn is None:
-            trainable_parameters = np.random.multivariate_normal(0, 1, weight_shape)
-        else
+            trainable_parameters = np.array([np.random.normal() for _ in total_weights])
+        else:
             trainable_parameters = initializer_fn()
-            if trainable_parameters.shape != weight_shape:
-                raise ValueError('initializer function must return shape: ', weight_shape, ' but returned shape: ', trainable_parameters.shape)
+            if type(trainable_parameters) != np.ndarray:
+                raise TypeError('initializer function must return np.ndarray, but returned: ', type(trainable_parameters))
+            if trainable_parameters.shape[0] != total_weights or np.ndim(trainable_parameters) != 1:
+                raise ValueError('initializer function must return shape: (', total_weights, ', ) but returned len: ', trainable_parameters.shape)
 
         def operation_fn(x, params):
             params = params.reshape(weight_shape)
@@ -28,11 +37,11 @@ class FullyConnected(Operation):
             dloss_dweight = np.flatten(dloss_dout.T * dout_dweight)
             return dloss_dweight
 
-        super(FullyConnected, self).__init__(input_shape,
-                                              output_shape,
-                                              operation_fn=operation_fn,
-                                              input_gradient_fn=input_gradient_fn,
-                                              weight_gradient_fn=weight_gradient_fn,
-                                              update_fn=update_fn,
-                                              trainable=True,
-                                              trainable_parameters=trainable_parameters)
+        super(FullyConnected1D, self).__init__(input_shape,
+                                               output_shape,
+                                               operation_fn=operation_fn,
+                                               input_gradient_fn=input_gradient_fn,
+                                               weight_gradient_fn=weight_gradient_fn,
+                                                update_fn=update_fn,
+                                               trainable=True,
+                                               trainable_parameters=trainable_parameters)

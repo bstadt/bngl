@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 from bngl.operation import Operation
+from bngl.layer import FullyConnected1D
 
 def operation_tests():
     failed_tests = []
@@ -217,6 +218,7 @@ def operation_tests():
 
     #register_weight_gradient registers gradient
     def test_weight_grad_fn(dloss_dout, last_input):
+        dloss_dout = np.array(dloss_dout)
         last_input = np.squeeze(last_input)
         dout_dweight = np.stack([[last_input[0], last_input[1], 0, 0],
                                  [0, 0, last_input[0], last_input[1]]])
@@ -257,8 +259,7 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: y[0] @ x,
-                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
                                  trainable_parameters=[np.identity(2)],
@@ -284,8 +285,7 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: y[0] @ x,
-                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
                                  trainable_parameters=[np.identity(2)],
@@ -310,8 +310,7 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: y[0] @ x,
-                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
                                  trainable_parameters=[np.identity(2)],
@@ -334,8 +333,7 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: y[0] @ x,
-                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
                                  trainable_parameters=[np.identity(2)],
@@ -359,8 +357,7 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: y[0] @ x,
-                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
                                  trainable_parameters=[np.identity(2)],
@@ -383,8 +380,7 @@ def operation_tests():
     try:
         my_operation = Operation((2, 1),
                                  (2, 1),
-                                 operation_fn=lambda x, y: y[0] @ x,
-                                 input_gradient_fn=lambda x, y: y[0],
+                                 operation_fn=lambda x, y: np.array(y).reshape(2, 2) @ x,                                 input_gradient_fn=lambda x, y: y[0],
                                  weight_gradient_fn=test_weight_grad_fn,
                                  update_fn=test_update_fn,
                                  trainable_parameters=[np.identity(2)],
@@ -397,18 +393,138 @@ def operation_tests():
             passed=True
 
     except:
-        raise
+        pass
 
     if not passed:
         failed_tests.append('update gradient clears gradients even when autoclear_gradients=False')
 
     return failed_tests
 
+
+def layer_tests():
+    failed_tests = []
+
+    #initializer throws error when input_shape is not rank 2
+    passed = False
+    try:
+        my_fc = FullyConnected1D((2,),
+                                 (2, 1),
+                                 lambda x, y: y-.5*np.sum(x, axis=0))
+    except ValueError:
+        passed = True
+        pass
+    except:
+        pass
+    if not passed:
+        failed_tests.append('initializer does not throw error when input_shape is not rank 2')
+
+    #initializer throws error when output_shape is not rank 2
+    passed = False
+    try:
+        my_fc = FullyConnected1D((2, 1),
+                                 (2,),
+                                 lambda x, y: y-.5*np.sum(x, axis=0))
+    except ValueError:
+        passed = True
+        pass
+    except:
+        pass
+    if not passed:
+        failed_tests.append('initializer does not throw error when output_shape is not rank 2')
+
+
+    #initializer throws error when input_shape is not (-1, 1)
+    passed = False
+    try:
+        my_fc = FullyConnected1D((2, 2),
+                                 (2, 1),
+                                 lambda x, y: y-.5*np.sum(x, axis=0))
+    except ValueError:
+        passed = True
+        pass
+    except:
+        pass
+    if not passed:
+        failed_tests.append('initializer does not throw error when input_shape is not (-1, 1)')
+
+
+    #initializer throws error when output_shape is not (-1, 1)
+    passed = False
+    try:
+        my_fc = FullyConnected1D((2, 1),
+                                 (2, 2),
+                                 lambda x, y: y-.5*np.sum(x, axis=0))
+    except ValueError:
+        passed = True
+        pass
+    except:
+        pass
+    if not passed:
+        failed_tests.append('initializer does not throw error when output_shape is not (-1, 1)')
+
+    #initializer_fn initializes weights
+    passed = False
+    try:
+        my_fc = FullyConnected1D((2, 1),
+                                 (2, 1),
+                                 lambda x, y: y-.5*np.sum(x, axis=0),
+                                 lambda : np.array([.1 for _ in range(4)]))
+
+        delta =  my_fc.trainable_parameters - np.array([.1 for _ in range(4)])
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('initializer_fn does not correctly initialize weights')
+
+
+    #initializer throws error when initializer_fn does not return np.array
+    passed = False
+    try:
+        my_fc = FullyConnected1D((2, 1),
+                                 (2, 1),
+                                 lambda x, y: y-.5*np.sum(x, axis=0),
+                                 lambda : 'cat')
+    except TypeError:
+        passed = True
+        pass
+    except:
+        pass
+    if not passed:
+        failed_tests.append('initializer does not throw error when initializer_fn returns non-list')
+
+    #initializer throws error when initializer_fn does not return correct shape
+    passed = False
+    try:
+        my_fc = FullyConnected1D((2, 1),
+                                 (2, 1),
+                                 lambda x, y: y-.5*np.sum(x, axis=0),
+                                 lambda : np.array([.1 for _ in range(3)]))
+    except ValueError:
+        passed = True
+        pass
+    except:
+        pass
+    if not passed:
+        failed_tests.append('no error thrown when initializer_fn returns incorrect number of trainable params')
+
+
+    return failed_tests
+
+
 if __name__ == '__main__':
     operation_failed_tests = operation_tests()
     if len(operation_failed_tests) > 0:
         print('Operation Failures:')
         for elem in operation_failed_tests:
+            print('\t', elem)
+        print('\n')
+
+    layer_failed_tests = layer_tests()
+    if len(layer_failed_tests) > 0:
+        print('Layer Failures:')
+        for elem in layer_failed_tests:
             print('\t', elem)
         print('\n')
 
