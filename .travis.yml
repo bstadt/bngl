@@ -4,4 +4,6 @@ python:
 install:
   - pip install -r requirements.txt
 script:
-  - python utest.py
+  - coverage run --source bngl/ utest.py
+after_success:
+  - coveralls
