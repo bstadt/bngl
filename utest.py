@@ -683,8 +683,10 @@ def loss_tests():
     #Softmax Cross Entropy Computes Correctly
     passed = False
     try:
-        my_smce = SoftmaxCrossEntropy((2, 1))
-        out = my_smce.do_operation(np.array([2, 1]).reshape(-1, 1))
+        my_smce = SoftmaxCrossEntropy((2, 2, 1))
+        x = np.array([2, 1]).reshape(-1, 1)
+        y = np.array([2, 1]).reshape(-1, 1)
+        out = my_smce.do_operation(np.stack([x, y]))
         expected_out = -1 * (2*np.log(1/(1+1/np.e)) + np.log((1/np.e)/(1+1/np.e)))
         delta = out - expected_out
         if np.allclose(delta, 0.):
@@ -699,15 +701,17 @@ def loss_tests():
     #Softmax Cross Entropy Computes Gradient Correctly
     passed = False
     try:
-        my_smce = SoftmaxCrossEntropy((2, 1))
-        my_smce.do_operation(np.array([2, 1]).reshape(-1, 1))
+        my_smce = SoftmaxCrossEntropy((2, 2, 1))
+        x = np.array([2, 1]).reshape(-1, 1)
+        y = np.array([2, 1]).reshape(-1, 1)
+        out = my_smce.do_operation(np.stack([x, y]))
         out = my_smce.get_input_gradient()
-        expected_out = np.array([1/(1+1/np.e) - 2, (1/np.e)/(1+1/np.e) - 1]).reshape(1, -1)
+        expected_out = np.array([1/(1+1/np.e) - 2, (1/np.e)/(1+1/np.e) - 1, 0., 0.]).reshape(1, -1)
         delta = out - expected_out
         if np.allclose(delta, 0.):
             passed = True
     except:
-        pass
+        raise
     if not passed:
         failed_tests.append('SoftmaxCrossEntropy does not compute gradient correctly')
 
@@ -737,6 +741,11 @@ def graph_tests():
         failed_tests.append('LinearGraph add_operation fails to add operation')
 
     #LinearGraph correctly backprops
+    dummy_loss_op = Operation((2, 2, 1),
+                              (1, 1),
+                              operation_fn=lambda x, y: np.array(1).reshape(1, 1),
+                              input_gradient_fn=lambda x, y: np.array(list(x[1]) + [0, 0]).reshape(1, -1),
+                              trainable=False)
     passed = False
     try:
         my_net = LinearGraph()
@@ -750,7 +759,13 @@ def graph_tests():
                                     initializer_fn=lambda:np.ones((2,))))
         my_net.add_operation(Relu((2, 1)))
 
-        my_net.train_on_batch([np.array([1., 1.]).reshape(-1, 1)])
+        my_net.add_loss(dummy_loss_op)
+
+        my_net.train_on_batch([np.array([1., 1.]).reshape(-1, 1)],
+                              [np.array([1., 1.]).reshape(-1, 1)])
+
+
+
         dense_params = my_net.layers[0].trainable_parameters
         delta1 = dense_params - .5*np.ones((4, ))
         bias_params = my_net.layers[1].trainable_parameters
