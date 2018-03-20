@@ -17,7 +17,7 @@ class FullyConnected1D(Operation):
         total_weights = input_shape[0] * output_shape[0]
         weight_shape = (output_shape[0], input_shape[0])
         if initializer_fn is None:
-            trainable_parameters = np.array([np.random.normal() for _ in total_weights])
+            trainable_parameters = np.array([np.random.normal() for _ in range(total_weights)])
         else:
             trainable_parameters = initializer_fn()
             if type(trainable_parameters) != np.ndarray:
@@ -60,7 +60,7 @@ class Bias1D(Operation):
         total_weights = input_shape[0]
 
         if initializer_fn is None:
-            trainable_parameters = np.array([.01 for _ in total_weights])
+            trainable_parameters = np.array([.01 for _ in range(total_weights)])
         else:
             trainable_parameters = initializer_fn()
             if type(trainable_parameters) != np.ndarray:
