@@ -1,3 +1,4 @@
+import sys
 import warnings
 import numpy as np
 from bngl.activation import Relu
@@ -770,8 +771,11 @@ def graph_tests():
 
 
 if __name__ == '__main__':
+    exit_code = 0
+
     operation_failed_tests = operation_tests()
     if len(operation_failed_tests) > 0:
+        exit_code = 1
         print('Operation Failures:')
         for elem in operation_failed_tests:
             print('\t', elem)
@@ -779,6 +783,7 @@ if __name__ == '__main__':
 
     layer_failed_tests = layer_tests()
     if len(layer_failed_tests) > 0:
+        exit_code = 1
         print('Layer Failures:')
         for elem in layer_failed_tests:
             print('\t', elem)
@@ -786,6 +791,7 @@ if __name__ == '__main__':
 
     activation_failed_tests = activation_tests()
     if len(activation_failed_tests) > 0:
+        exit_code = 1
         print('Activation Failures:')
         for elem in activation_failed_tests:
             print('\t', elem)
@@ -793,6 +799,7 @@ if __name__ == '__main__':
 
     loss_failed_tests = loss_tests()
     if len(loss_failed_tests) > 0:
+        exit_code = 1
         print('Loss Failures:')
         for elem in loss_failed_tests:
             print('\t', elem)
@@ -801,9 +808,11 @@ if __name__ == '__main__':
 
     graph_failed_tests = graph_tests()
     if len(graph_failed_tests) > 0:
+        exit_code = 1
         print('Graph Failures:')
         for elem in graph_failed_tests:
             print('\t', elem)
         print('\n')
 
     print('Testing Complete!')
+    sys.exit(exit_code)
