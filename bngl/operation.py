@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 
-class Operation:
+class Operation(object):
     def __init__(self,
                  input_shape,
                  output_shape,
@@ -43,8 +43,8 @@ class Operation:
         else:
             test_input = np.zeros(input_shape)
             test_output = input_gradient_fn(test_input, trainable_parameters)
-            desired_shape = (np.prod(input_shape),
-                             np.prod(output_shape))
+            desired_shape = (np.prod(output_shape),
+                             np.prod(input_shape))
             if type(test_output) != np.ndarray:
                 raise TypeError('input_gradient_fn must return numpy.ndarray, but returned: ', type(test_output))
             if test_output.shape != desired_shape:
@@ -86,6 +86,7 @@ class Operation:
 
 
     def get_input_gradient(self):
+        #TODO check if last input is None here
         return self.input_gradient_fn(self.last_input, self.trainable_parameters)
 
 

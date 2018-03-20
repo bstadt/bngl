@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 from bngl.activation import Relu
+from bngl.graph import LinearGraph
 from bngl.operation import Operation
 from bngl.loss import SoftmaxCrossEntropy
 from bngl.layer import FullyConnected1D, Bias1D
@@ -625,7 +626,7 @@ def layer_tests():
     passed = False
     try:
         my_b = Bias1D((2,1),
-                      lambda x, y: y-.5*np.diagonal(np.sum(x, axis=0)),
+                      lambda x, y: y-.5*np.sum(x, axis=0),
                       initializer_fn=lambda: np.array([1., 1.]).reshape(2,))
         my_b.do_operation(np.array([1., 1.]).reshape(-1, 1))
         my_b.register_weight_gradient(np.array([1., 1.]).reshape((1, 2)))
@@ -711,6 +712,62 @@ def loss_tests():
 
     return failed_tests
 
+def graph_tests():
+    failed_tests = []
+
+    def sgd(gradients, trainable_parameters):
+        gradient = np.sum(gradients, axis=0)
+        trainable_parameters = trainable_parameters - .5 * gradient
+        return trainable_parameters
+
+    #LinearGraph ad_opperation adds operation
+    passed = False
+    try:
+        my_net = LinearGraph()
+        my_net.add_operation(FullyConnected1D((2, 1),
+                                              (2, 1),
+                                              sgd,
+                                              initializer_fn=lambda:np.ones((4,))))
+        if len(my_net.layers) == 1:
+            passed = True
+    except:
+        raise
+    if not passed:
+        failed_tests.append('LinearGraph add_operation fails to add operation')
+
+    #LinearGraph correctly backprops
+    passed = False
+    try:
+        my_net = LinearGraph()
+        my_net.add_operation(FullyConnected1D((2, 1),
+                                              (2, 1),
+                                              sgd,
+                                              initializer_fn=lambda:np.ones((4,))))
+
+        my_net.add_operation(Bias1D((2, 1),
+                                    sgd,
+                                    initializer_fn=lambda:np.ones((2,))))
+        my_net.add_operation(Relu((2, 1)))
+
+        my_net.train_on_batch([np.array([1., 1.]).reshape(-1, 1)])
+        dense_params = my_net.layers[0].trainable_parameters
+        delta1 = dense_params - .5*np.ones((4, ))
+        bias_params = my_net.layers[1].trainable_parameters
+        delta2 = bias_params - .5*np.ones(2, )
+        if np.allclose(delta1, 0.) and np.allclose(delta2, 0.):
+            passed = True
+
+    except:
+        raise
+    if not passed:
+        failed_tests.append('LinearGraph fails to backprop correctly')
+
+
+
+
+    return failed_tests
+
+
 
 if __name__ == '__main__':
     operation_failed_tests = operation_tests()
@@ -738,6 +795,14 @@ if __name__ == '__main__':
     if len(loss_failed_tests) > 0:
         print('Loss Failures:')
         for elem in loss_failed_tests:
+            print('\t', elem)
+        print('\n')
+
+
+    graph_failed_tests = graph_tests()
+    if len(graph_failed_tests) > 0:
+        print('Graph Failures:')
+        for elem in graph_failed_tests:
             print('\t', elem)
         print('\n')
 

@@ -34,6 +34,7 @@ class FullyConnected1D(Operation):
 
         def weight_gradient_fn(dloss_dout, last_input):
             dout_dweight = np.stack([last_input for _ in range(output_shape[0])])
+            dout_dweight = dout_dweight.reshape(weight_shape)
             dloss_dweight = np.array(dloss_dout.T * dout_dweight).flatten()
             return dloss_dweight
 
@@ -74,7 +75,7 @@ class Bias1D(Operation):
             return np.identity(last_input.shape[0])
 
         def weight_gradient_fn(dloss_dout, last_input):
-            return np.identity(last_input.shape[0])
+            return dloss_dout.flatten()
 
         super(Bias1D, self).__init__(input_shape,
                                      input_shape,
