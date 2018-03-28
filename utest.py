@@ -4,7 +4,7 @@ import numpy as np
 from bngl.activation import Relu
 from bngl.graph import LinearGraph
 from bngl.operation import Operation
-from bngl.loss import SoftmaxCrossEntropy
+from bngl.loss import SoftmaxCrossEntropy, MSE
 from bngl.layer import FullyConnected1D, Bias1D
 
 def operation_tests():
@@ -711,9 +711,43 @@ def loss_tests():
         if np.allclose(delta, 0.):
             passed = True
     except:
-        raise
+        pass
     if not passed:
         failed_tests.append('SoftmaxCrossEntropy does not compute gradient correctly')
+
+    #MSE Computes Correctly
+    passed = False
+    try:
+        my_mse = MSE((2, 2, 1))
+        x = np.array([1, 1]).reshape(-1, 1)
+        y = np.array([2, 0]).reshape(-1, 1)
+        out = my_mse.do_operation(np.stack([x, y]))
+        expected_out = 1
+        delta = out - expected_out
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        pass
+    if not passed:
+        failed_tests.append('MSE does not compute correctly')
+
+
+    #MSE Computes Input Gradient Correctly
+    passed = False
+    try:
+        my_mse = MSE((2, 2, 1))
+        x = np.array([1, 1]).reshape(-1, 1)
+        y = np.array([2, 0]).reshape(-1, 1)
+        _ = my_mse.do_operation(np.stack([x, y]))
+        out = my_mse.get_input_gradient().reshape(-1, 1)
+        expected_out = np.array([-2., 2., 0., 0.]).reshape(-1, 1)
+        delta = out - expected_out
+        if np.allclose(delta, 0.):
+            passed = True
+    except:
+        raise
+    if not passed:
+        failed_tests.append('MSE does not compute gradient correctly')
 
     return failed_tests
 

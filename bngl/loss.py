@@ -22,9 +22,9 @@ class SoftmaxCrossEntropy(Operation):
             m = np.max(x)
             smax = np.exp(x-m)/(np.sum(np.exp(x-m)))
             grad = (smax - y).reshape(-1, )
-            #NOTE this is dne since the output of input_gradient_fn must return
+            #NOTE this is done since the output of input_gradient_fn must return
             #a gradient for each dim of its input, including the label.
-            grad = list(grad) + list(np.zeros_like(y).reshape(-1, ))
+            grad = [np.squeeze(elem) for elem in grad] + list(np.zeros_like(y).reshape(-1, ))
             return np.array(grad).reshape(1, -1)
 
 
@@ -33,3 +33,27 @@ class SoftmaxCrossEntropy(Operation):
                                                   operation_fn=operation_fn,
                                                   input_gradient_fn=input_gradient_fn,
                                                   trainable=False)
+
+class MSE(Operation):
+
+    def __init__(self, input_shape):
+
+        def operation_fn(pred_label_pair, params):
+            x = pred_label_pair[0]
+            y = pred_label_pair[1]
+            return np.mean(np.power((x-y), 2)).reshape(-1, 1)
+
+        def input_gradient_fn(pred_label_pair, params):
+            x = pred_label_pair[0]
+            y = pred_label_pair[1]
+            grad = 2*(x-y).reshape(-1, 1)
+            #NOTE this is done since the output of input_gradient_fn must return
+            #a gradient for each dim of its input, including the label.
+            grad = [np.squeeze(elem) for elem in grad] + list(np.zeros_like(y).reshape(-1, ))
+            return np.array(grad).reshape(1, -1)
+
+        super(MSE, self).__init__(input_shape,
+                                 (1, 1),
+                                 operation_fn=operation_fn,
+                                 input_gradient_fn=input_gradient_fn,
+                                 trainable=False)
